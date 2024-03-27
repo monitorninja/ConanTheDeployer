@@ -11,3 +11,8 @@ variable "aws_security_group_allow_http_name" {
   # Importing from modules/security_group/outputs.tf
   type = string
 }
+
+# Define the variable for the public subnet ID
+variable "public_subnet_id" {
+  type = string
+}
