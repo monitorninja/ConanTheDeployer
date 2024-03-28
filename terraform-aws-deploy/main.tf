@@ -16,8 +16,9 @@ module "security_group" {
 
 module "ec2" {
     source = "./modules/ec2"
-    aws_security_group_allow_http_name = module.security_group.aws_security_group_allow_http_name
+    aws_sg_allow_http_id = [module.security_group.security_group_id]
     public_subnet_id = module.vpc.aws_subnet_public_id
+    vpc_id = module.vpc.vpc_id
 }
 
 module "s3" {

@@ -7,12 +7,18 @@
 
 
 # Define the variable for the VPC ID
-variable "aws_security_group_allow_http_name" {
+variable "aws_sg_allow_http_id" {
   # Importing from modules/security_group/outputs.tf
-  type = string
+  type = list(string)
 }
 
 # Define the variable for the public subnet ID
 variable "public_subnet_id" {
+  type = string
+}
+
+# Define the variable for the VPC ID
+variable "vpc_id" {
+  # Importing from modules/vpc/outputs.tf
   type = string
 }

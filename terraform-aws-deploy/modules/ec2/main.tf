@@ -25,7 +25,7 @@ resource "aws_instance" "conanthedeployer" {
   subnet_id     = var.public_subnet_id
 
   # Attach Security Group to EC2 instance
-  security_groups = [var.aws_security_group_allow_http_name]
+  # security_groups = [var.aws_sg_allow_http_name]
 
   tags = {
     Name = "conanthedeployer"
