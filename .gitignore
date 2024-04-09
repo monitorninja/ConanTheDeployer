@@ -29,3 +29,6 @@ terraform.tfstate.backup
 # Ansible
 .retry
 
+# SSH keys
+*.pem
+*.pub
