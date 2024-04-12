@@ -9,10 +9,12 @@
 variable "ec2_public_ip" {
   description = "Public IP of the EC2 instance"
   type = string
+  default = "0.0.0.0"
 }
 
 # Import the SSH command variable to the user
 variable "ssh_command" {
   description = "SSH command string for the EC2 instance"
   type = string
+    default = "ssh"
 }
