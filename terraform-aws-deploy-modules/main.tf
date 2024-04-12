@@ -20,7 +20,7 @@ module "ec2" {
     public_subnet_id = module.vpc.aws_subnet_public_id
     vpc_id = module.vpc.vpc_id
 }
-
+/*
 module "s3" {
     source = "./modules/s3"
 }
@@ -31,3 +31,4 @@ module "ssh" {
 
 # Add more modules here if needed
 
+*/

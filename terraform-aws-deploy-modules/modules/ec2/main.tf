@@ -29,8 +29,8 @@ resource "aws_instance" "conanthedeployer" {
 
   network_interface {
     device_index = 0
-    network_interface_id = aws_network_interface.main.id
-    associate_public_ip_address = true 
+    network_interface_id =     .main.id
+    # associate_public_ip_address = true 
   }
 
   tags = {

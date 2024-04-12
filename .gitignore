@@ -32,3 +32,4 @@ terraform.tfstate.backup
 # SSH keys
 *.pem
 *.pub
+~/.ssh/**

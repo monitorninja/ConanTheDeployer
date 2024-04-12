@@ -12,6 +12,10 @@ variable "ec2_public_ip" {
   default = "0.0.0.0"
 }
 
+variable "public_key" {
+  default = file("~/.ssh/conankey.pub") 
+}
+
 # Import the SSH command variable to the user
 variable "ssh_command" {
   description = "SSH command string for the EC2 instance"

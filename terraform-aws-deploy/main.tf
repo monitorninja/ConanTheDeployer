@@ -6,122 +6,116 @@
 # main.tf
 
 
-resource "aws_vpc" "conan_vpc" {
-  cidr_block           = "10.123.0.0/16"
+# Create a VPC to launch our instances into
+resource "aws_vpc" "default" {
+  cidr_block = "10.0.0.0/16"
   enable_dns_hostnames = true
   enable_dns_support   = true
 
   tags = {
-    Name = "ec2_vpc"
+    Name = "conan_vpc" 
   }
 }
 
+# Create an internet gateway to give our subnet access to the outside world
+resource "aws_internet_gateway" "default" {
+  vpc_id = aws_vpc.default.id
 
-resource "aws_subnet" "conan_public_subnet" {
-  vpc_id                  = aws_vpc.conan_vpc.id
-  cidr_block              = "10.123.1.0/24"
+  tags = {
+    Name = "conan_internet_gateway"
+  }
+}
+
+# Grant the VPC internet access on its main route table
+resource "aws_route_table" "default" {
+  vpc_id = aws_vpc.default.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.default.id
+  }
+
+  tags = {
+    Name = "conan_route_table"
+  }
+}
+
+# Create a public subnet to launch our instances into 
+resource "aws_subnet" "default_public" {
+  vpc_id     = aws_vpc.default.id
+  cidr_block = "10.0.1.0/24"
+  availability_zone = "us-east-1a"
   map_public_ip_on_launch = true
-  availability_zone       = "us-east-1a"
 
   tags = {
-    Name = "dev-public"
+    Name = "conan_subnet"
   }
 }
 
+# Explicitly associate the main route table with the subnet
+resource "aws_route_table_association" "a" {
+  subnet_id      = aws_subnet.default_public.id
+  route_table_id = aws_route_table.default.id
+}
 
-
-resource "aws_internet_gateway" "conan_internet_gateway" {
-  vpc_id = aws_vpc.conan_vpc.id
-
-  tags = {
-    Name = "dev-igw"
+# Create key pair for SSH access to our instances
+resource "aws_key_pair" "deployer" {
+  key_name   = "conan_the_deployer-key"
+  public_key = var.public_key
+  provisioner "local-exec" {
+    command = "aws secretsmanager create-secret --name conan_the_deployer-key --secret-string fileb://path/to/public/key.pub" 
   }
 }
 
-
-resource "aws_route_table" "conan_public_rt" {
-  vpc_id = aws_vpc.conan_vpc.id
-
-  tags = {
-    Name = "dev_public_rt"
-  }
-}
-
-resource "aws_route" "default_route" {
-  route_table_id         = aws_route_table.conan_public_rt.id
-  destination_cidr_block = "0.0.0.0/0"
-  gateway_id             = aws_internet_gateway.conan_internet_gateway.id
-}
-
-
-resource "aws_route_table_association" "conan_public_assoc" {
-  subnet_id      = aws_subnet.conan_public_subnet.id
-  route_table_id = aws_route_table.conan_public_rt.id
-}
-
-
-resource "aws_security_group" "conan_sg" {
-  name        = "dev_sg"
-  description = "dev security group"
-  vpc_id      = aws_vpc.conan_vpc.id
+# Create a security group for the EC2 instance
+resource "aws_security_group" "allow_web" {
+  name        = "allow_web_traffic"
+  description = "Allow web traffic"
+  vpc_id      = aws_vpc.default.id
 
   ingress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    description      = "HTTP"
+    from_port        = 80
+    to_port          = 80
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"] 
   }
+
+  ingress {
+    description      = "HTTPS"
+    from_port        = 443
+    to_port          = 443
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+  }
+
   egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"] 
+    from_port        = 0
+    to_port          = 0
+    protocol         = "-1"
+    cidr_blocks      = ["0.0.0.0/0"]
   }
-}
-
-
-data "aws_ami" "server_ami" {
-  most_recent = true
-  owners      = ["099720109477"]
-
-  filter {
-    name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*"]
-  }
-}
-
-
-resource "aws_key_pair" "conan_auth" {
-  key_name   = "conan_key"
-  public_key = file("~/.ssh/conankey.pub")
-}
-
-
-resource "aws_instance" "ec2_dev" {
-  instance_type          = "t2.micro"
-  ami                    = data.aws_ami.server_ami.id
-  vpc_security_group_ids = [aws_security_group.conan_sg.id]
-  subnet_id              = aws_subnet.conan_public_subnet.id
-  key_name               = aws_key_pair.conan_auth.id
-
-  root_block_device {  
-    volume_size = 20
-  }
-  tags = {
-    Name = "dev-node"
-  }
-}
-
-
-
-
-# EC2 Instance(s)
-resource "aws_instance" "conanthedeployer" {
-  count         = 3 # Create 3 instance(s)
-  ami           = "ami-052efd3df9dad4825" # Ubuntu example, adjust as needed
-  instance_type = "t2.micro" 
 
   tags = {
-    Name = "conanthedeployer"
+    Name = "allow_web"
   }
 }
+
+
+# Launch an EC2 instance
+resource "aws_instance" "conan_the_deployer" {
+  ami           = "ami-0c02fb55956c7d316" 
+  instance_type = "t2.micro"
+  subnet_id     = aws_subnet.default_public.id
+
+  security_groups = [
+    aws_security_group.allow_web.name
+  ]
+  tags = {
+    Name = "conan_the_deployer"
+  }
+
+  key_name = "${output.secret_arn}"
+}
+
+
