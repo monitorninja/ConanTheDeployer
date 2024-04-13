@@ -27,12 +27,6 @@ resource "aws_instance" "conanthedeployer" {
   # Attach Security Group to EC2 instance
   # security_groups = [var.aws_sg_allow_http_name]
 
-  network_interface {
-    device_index = 0
-    network_interface_id =     .main.id
-    # associate_public_ip_address = true 
-  }
-
   tags = {
     Name = "conanthedeployer"
   }

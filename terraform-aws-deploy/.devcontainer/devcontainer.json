@@ -1,0 +1,5 @@
+{
+    "dockerFile": "dockerbuild/Dockerfile",
+    "appPort": 3000 
+  }
+  

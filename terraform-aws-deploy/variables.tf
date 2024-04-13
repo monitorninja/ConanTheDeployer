@@ -1,4 +1,11 @@
-# Description: This file contains the configuration for the variables file
+# Description: This file contains the configuration for the variables file.  We DEFINE variables here, however we SET variables with a .tfvars file, environment variables, or the '-var' command line option when running Terraform.
+  #   Key points:
+  #   variables.tf declares variables (type, description, defaults) [2]
+  #   .tfvars assigns values to variables
+  #   .tfvars avoids checking sensitive values into source control
+  #   Default values can be set in variables.tf if needed [3]
+  #   Variables without defaults require values set in .tfvars
+#
 # Author:      Frank Aaron Smith
 # Date:        4/26/2024
 # Version:     1.0
@@ -13,12 +20,14 @@ variable "ec2_public_ip" {
 }
 
 variable "public_key" {
-  default = file("~/.ssh/conankey.pub") 
+  description = "Cannot use file() function in variables.tf file. Set the value of this variable later via a .tfvars file, environment variables, or the '-var' command line option when running Terraform"
+  # default = file("~/.ssh/conankey.pub")
+  type = string
 }
 
 # Import the SSH command variable to the user
 variable "ssh_command" {
   description = "SSH command string for the EC2 instance"
   type = string
-    default = "ssh"
+  default = "ssh"
 }
