@@ -1,0 +1,6 @@
+---
+- name: Example playbook
+  hosts: webservers
+  roles:
+    - role: devops.ConanTheDeployer.run
+    - role: devops.ConanTheDeployer.os_config

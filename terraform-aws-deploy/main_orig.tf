@@ -12,7 +12,7 @@ resource "aws_vpc" "conan_vpc" {
   enable_dns_support   = true
 
   tags = {
-    Name = "ec2_vpc"
+    Name = "conan_vpc"
   }
 }
 
@@ -24,7 +24,7 @@ resource "aws_subnet" "conan_public_subnet" {
   availability_zone       = "us-east-1a"
 
   tags = {
-    Name = "dev-public"
+    Name = "conan_public_subnet"
   }
 }
 
@@ -34,7 +34,7 @@ resource "aws_internet_gateway" "conan_internet_gateway" {
   vpc_id = aws_vpc.conan_vpc.id
 
   tags = {
-    Name = "dev-igw"
+    Name = "conan_internet_gateway"
   }
 }
 
@@ -43,11 +43,11 @@ resource "aws_route_table" "conan_public_rt" {
   vpc_id = aws_vpc.conan_vpc.id
 
   tags = {
-    Name = "dev_public_rt"
+    Name = "conan_public_rt"
   }
 }
 
-resource "aws_route" "default_route" {
+resource "aws_route" "conan_default_route" {
   route_table_id         = aws_route_table.conan_public_rt.id
   destination_cidr_block = "0.0.0.0/0"
   gateway_id             = aws_internet_gateway.conan_internet_gateway.id

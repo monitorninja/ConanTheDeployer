@@ -2,14 +2,10 @@ all:
   hosts:
     server1:
       ansible_host: 192.168.1.10
-      ansible_user: user
-      ansible_ssh_pass: password
     server2:
       ansible_host: 192.168.1.11
-      ansible_user: user
-      ansible_ssh_pass: password
   vars:
-    ansible_python_interpreter: /usr/bin/python3
+    ansible_python_interpreter: /Users/cameo/development/vsCode_workspaces/ConanTheDeployer/.venv/bin/python
   children:
     webserver:
       hosts:

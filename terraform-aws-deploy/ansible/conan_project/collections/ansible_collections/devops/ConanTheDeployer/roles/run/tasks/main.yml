@@ -1,0 +1,7 @@
+---
+- name: Add EC2 instance to inventory
+  add_host:
+    hostname: "{{ lookup('env', 'public_ip') }}"
+    groupname: webservers
+    inventory_file: ../inventory/inventory.yml
+
