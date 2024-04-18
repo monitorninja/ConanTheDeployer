@@ -20,9 +20,16 @@ variable "ec2_public_ip" {
 }
 
 variable "public_key" {
+  # This variable declared here, but set in the terraform.tfvars file in this same directory
   description = "Cannot use file() function in variables.tf file. Set the value of this variable later via a .tfvars file, environment variables, or the '-var' command line option when running Terraform"
-  # default = file("~/.ssh/conankey.pub")
   type = string
+}
+
+variable "conan_private_key" {
+  # This variable declared here, but set in the terraform.tfvars file in this same directory
+  description = "Cannot use file() function in variables.tf file. Set the value of this variable later via a .tfvars file, environment variables, or the '-var' command line option when running Terraform"
+  type = string
+  default = "~/.ssh/conankey.private"
 }
 
 # Import the SSH command variable to the user

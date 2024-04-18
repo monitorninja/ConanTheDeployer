@@ -58,15 +58,40 @@ resource "aws_route_table_association" "conan_route_table_association_a" {
   route_table_id = aws_route_table.conan_route_table_default.id
 }
 
-# Create key pair for SSH access to our instances
-resource "aws_key_pair" "conan_deployer" {
-  key_name   = "conan_the_deployer_key"
-  public_key = var.public_key
-  provisioner "local-exec" {
-    command = "aws secretsmanager create-secret --name conan_the_deployer_key --secret-string fileb://Users/to/public/key.pub" 
-    
-  }
+
+resource "tls_private_key" "conan_private_key" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
 }
+
+resource "aws_key_pair" "conan_generated_public_key" {
+  key_name   = "${var.conan_private_key}"
+  public_key = "${tls_private_key.conan_private_key.public_key_openssh}"
+}
+
+# Create a local file with the contents of conan_private_key
+resource "local_file" "conan_private_key_file" {
+  filename = "~/.ssh/conan_private_key_terraform_output.pem"
+  content  = tls_private_key.conan_private_key.private_key_pem
+}
+
+/*
+data "aws_ami" "ubuntu" {
+  most_recent = true
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd/ubuntu-trusty-14.04-amd64-server-*"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+
+  owners = ["099720109477"] # Canonical
+}
+*/
 
 # Create a security group for the EC2 instance
 resource "aws_security_group" "allow_web_ssh_traffic" {
@@ -120,12 +145,13 @@ resource "aws_security_group" "allow_web_ssh_traffic" {
   }
 }
 
-
 # Launch an EC2 instance
 resource "aws_instance" "conan_the_deployer" {
   ami           = "ami-0c02fb55956c7d316" 
+  # ami           = "${data.aws_ami.ubuntu.id}"
   instance_type = "t2.micro"
   subnet_id     = aws_subnet.conan_default_public_subnet.id
+  key_name      = "${aws_key_pair.conan_generated_public_key.key_name}"
 
   security_groups = [
     aws_security_group.allow_web_ssh_traffic.name
@@ -134,7 +160,13 @@ resource "aws_instance" "conan_the_deployer" {
     Name = "conan_the_deployer"
   }
 
-  key_name = "${output.secret_arn}"
+#  user_data = <<EOF
+# #!/bin/bash
+# mkdir -p ~/.ssh
+# echo "${var.public_key}" > ~/.ssh/authorized_keys
+# chmod 600 ~/.ssh/authorized_keys
+# EOF
+
 }
 
 
