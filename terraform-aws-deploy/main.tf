@@ -5,7 +5,6 @@
 
 # main.tf
 
-
 # Create a VPC to launch our instances into
 resource "aws_vpc" "conan_vpc" {
   cidr_block = "10.0.0.0/16"
@@ -14,6 +13,61 @@ resource "aws_vpc" "conan_vpc" {
 
   tags = {
     Name = "conan_vpc" 
+  }
+}
+
+
+# Create a security group for the EC2 instance to allow web traffic from anywhere and ssh traffic from the public internet
+resource "aws_security_group" "allow_web_ssh_traffic" {
+  name        = "allow_web_ssh_traffic"
+  description = "Allow web and ssh traffic"
+  vpc_id      = aws_vpc.conan_vpc.id
+
+  depends_on = [aws_vpc.conan_vpc]
+
+  # SSH access from anywhere
+  ingress {
+    description      = "SSH"
+    from_port        = 22
+    to_port          = 22
+    protocol         = "tcp"
+    cidr_blocks      = ["97.71.253.11/32"]
+  }
+
+  # HTTP access from anywhere
+  ingress {
+    description      = "HTTP"
+    from_port        = 80
+    to_port          = 80
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"] 
+  }
+
+  # HTTPS access from anywhere
+  ingress {
+    description      = "HTTPS"
+    from_port        = 443
+    to_port          = 443
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+  }
+
+  # Allow all outbound traffic
+  egress {
+    from_port        = 0
+    to_port          = 0
+    protocol         = "-1"
+    cidr_blocks      = ["0.0.0.0/0"]
+  }
+
+  # Ignore changes to the security group
+  lifecycle {
+    ignore_changes = [ingress]
+  }
+
+  # Add tags to the security group
+  tags = {
+    Name = "allow_web_ssh_traffic"
   }
 }
 
@@ -58,21 +112,35 @@ resource "aws_route_table_association" "conan_route_table_association_a" {
   route_table_id = aws_route_table.conan_route_table_default.id
 }
 
-
+# Create a private ssh key for the EC2 instance
 resource "tls_private_key" "conan_private_key" {
   algorithm = "RSA"
   rsa_bits  = 4096
 }
 
-resource "aws_key_pair" "conan_generated_public_key" {
-  key_name   = "${var.conan_private_key}"
+# Create a key pair for the EC2 instance by creating a public key using the private key
+resource "aws_key_pair" "conan_generated_key_pair" {
+  key_name   = "conan_generated_key_pair"
   public_key = "${tls_private_key.conan_private_key.public_key_openssh}"
+  tags = {
+    Name = "conan_generated_key_pair"
+  }
 }
 
-# Create a local file with the contents of conan_private_key
+# Create a local file with the contents of conan_private_key in .pem format
 resource "local_file" "conan_private_key_file" {
-  filename = "~/.ssh/conan_private_key_terraform_output.pem"
+  filename = ".ssh/conan_private_key_terraform_output.pem"
   content  = tls_private_key.conan_private_key.private_key_pem
+}
+
+resource "null_resource" "change_file_permission" {
+  depends_on = [local_file.conan_private_key_file]
+  provisioner "local-exec" {
+    command = "chmod 600 .ssh/conan_private_key_terraform_output.pem"
+  }
+  triggers = {
+    always_run = "${timestamp()}"
+  }
 }
 
 /*
@@ -93,57 +161,6 @@ data "aws_ami" "ubuntu" {
 }
 */
 
-# Create a security group for the EC2 instance
-resource "aws_security_group" "allow_web_ssh_traffic" {
-  name        = "allow_web_ssh_traffic"
-  description = "Allow web and ssh traffic"
-  vpc_id      = aws_vpc.conan_vpc.id
-
-  # SSH access from anywhere
-  ingress {
-    description      = "SSH"
-    from_port        = 22
-    to_port          = 22
-    protocol         = "tcp"
-    cidr_blocks      = ["0.0.0.0/0"]
-  }
-
-  # HTTP access from anywhere
-  ingress {
-    description      = "HTTP"
-    from_port        = 80
-    to_port          = 80
-    protocol         = "tcp"
-    cidr_blocks      = ["0.0.0.0/0"] 
-  }
-
-  # HTTPS access from anywhere
-  ingress {
-    description      = "HTTPS"
-    from_port        = 443
-    to_port          = 443
-    protocol         = "tcp"
-    cidr_blocks      = ["0.0.0.0/0"]
-  }
-
-  # Allow all outbound traffic
-  egress {
-    from_port        = 0
-    to_port          = 0
-    protocol         = "-1"
-    cidr_blocks      = ["0.0.0.0/0"]
-  }
-
-  # Ignore changes to the security group
-  lifecycle {
-    ignore_changes = [ingress]
-  }
-
-  # Add tags to the security group
-  tags = {
-    Name = "allow_web_ssh_traffic"
-  }
-}
 
 # Launch an EC2 instance
 resource "aws_instance" "conan_the_deployer" {
@@ -151,22 +168,26 @@ resource "aws_instance" "conan_the_deployer" {
   # ami           = "${data.aws_ami.ubuntu.id}"
   instance_type = "t2.micro"
   subnet_id     = aws_subnet.conan_default_public_subnet.id
-  key_name      = "${aws_key_pair.conan_generated_public_key.key_name}"
+  associate_public_ip_address = true
 
-  security_groups = [
-    aws_security_group.allow_web_ssh_traffic.name
+  key_name      = "${aws_key_pair.conan_generated_key_pair.key_name}"
+
+  depends_on = [aws_security_group.allow_web_ssh_traffic]
+
+  vpc_security_group_ids = [
+    aws_security_group.allow_web_ssh_traffic.id
   ]
+  
   tags = {
     Name = "conan_the_deployer"
   }
 
-#  user_data = <<EOF
-# #!/bin/bash
-# mkdir -p ~/.ssh
-# echo "${var.public_key}" > ~/.ssh/authorized_keys
-# chmod 600 ~/.ssh/authorized_keys
-# EOF
-
+ user_data = <<EOF
+  #!/bin/bash
+  mkdir -p ~/.ssh
+  echo "${aws_key_pair.conan_generated_key_pair.public_key}" > ~/.ssh/authorized_keys
+  chmod 600 ~/.ssh/authorized_keys
+  EOF
 }
 
 

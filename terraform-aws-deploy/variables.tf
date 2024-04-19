@@ -12,18 +12,20 @@
 
 # ./variables.tf
 
-# Import the public IP variable of the EC2 instance
+# Declare the public IP variable of the EC2 instance
 variable "ec2_public_ip" {
   description = "Public IP of the EC2 instance"
   type = string
   default = "0.0.0.0"
 }
 
+/*
 variable "public_key" {
   # This variable declared here, but set in the terraform.tfvars file in this same directory
   description = "Cannot use file() function in variables.tf file. Set the value of this variable later via a .tfvars file, environment variables, or the '-var' command line option when running Terraform"
   type = string
 }
+*/
 
 variable "conan_private_key" {
   # This variable declared here, but set in the terraform.tfvars file in this same directory
@@ -32,9 +34,15 @@ variable "conan_private_key" {
   default = "~/.ssh/conankey.private"
 }
 
-# Import the SSH command variable to the user
+# Declare the SSH command variable to the user
 variable "ssh_command" {
   description = "SSH command string for the EC2 instance"
   type = string
   default = "ssh"
 }
+
+/*
+variable "conan_vpc_id" {
+  
+}
+*/
