@@ -33,3 +33,7 @@ terraform.tfstate.backup
 *.pem
 *.pub
 ~/.ssh/**
+
+# Terraform Plans
+plans_tmp/
+plans_tmp/*

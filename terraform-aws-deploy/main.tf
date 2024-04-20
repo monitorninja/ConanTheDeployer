@@ -186,6 +186,7 @@ resource "aws_instance" "conan_the_deployer" {
   #!/bin/bash
   mkdir -p ~/.ssh
   echo "${aws_key_pair.conan_generated_key_pair.public_key}" > ~/.ssh/authorized_keys
+  chmod 700 ~/.ssh
   chmod 600 ~/.ssh/authorized_keys
   EOF
 }

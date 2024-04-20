@@ -20,7 +20,7 @@ output "conan_private_key_filename" {
   value = local_file.conan_private_key_file.filename
 }
 output "ssh_command" {
-  value = "ssh -i ${local_file.conan_private_key_file.filename} ubuntu@${aws_instance.conan_the_deployer.public_ip}"
+  value = "ssh -i ${local_file.conan_private_key_file.filename} ec2-user@${aws_instance.conan_the_deployer.public_ip}"
 }
 
 output "conan_vpc_id" {
