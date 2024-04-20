@@ -16,7 +16,6 @@ resource "aws_vpc" "conan_vpc" {
   }
 }
 
-
 # Create a security group for the EC2 instance to allow web traffic from anywhere and ssh traffic from the public internet
 resource "aws_security_group" "allow_web_ssh_traffic" {
   name        = "allow_web_ssh_traffic"
@@ -143,24 +142,6 @@ resource "null_resource" "change_file_permission" {
   }
 }
 
-/*
-data "aws_ami" "ubuntu" {
-  most_recent = true
-
-  filter {
-    name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-trusty-14.04-amd64-server-*"]
-  }
-
-  filter {
-    name   = "virtualization-type"
-    values = ["hvm"]
-  }
-
-  owners = ["099720109477"] # Canonical
-}
-*/
-
 
 # Launch an EC2 instance
 resource "aws_instance" "conan_the_deployer" {
@@ -191,4 +172,9 @@ resource "aws_instance" "conan_the_deployer" {
   EOF
 }
 
-
+# Populate ansible inventory.ini file with the public IP of the EC2 instance
+resource "local_file" "inventory" {
+  content  = data.template_file.inventory.rendered
+  filename = "ansible/conan_project/inventory/inventory.ini"
+  depends_on = [aws_instance.conan_the_deployer]
+}
