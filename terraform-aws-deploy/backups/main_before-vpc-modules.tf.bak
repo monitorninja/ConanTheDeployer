@@ -4,7 +4,7 @@
 # Version:     1.0
 
 # main.tf
-/*
+
 # Create a VPC to launch our instances into
 resource "aws_vpc" "conan_vpc" {
   cidr_block = "10.0.0.0/16"
@@ -15,20 +15,14 @@ resource "aws_vpc" "conan_vpc" {
     Name = "conan_vpc" 
   }
 }
-*/
-
-module "conan_vpc_module" {
-  source = "./modules/vpc_subnets"
-  // pass any required variables to the module...
-}
 
 # Create a security group for the EC2 instance to allow web traffic from anywhere and ssh traffic from the public internet
 resource "aws_security_group" "allow_web_ssh_traffic" {
   name        = "allow_web_ssh_traffic"
   description = "Allow web and ssh traffic"
-  vpc_id      = module.conan_vpc_module.conan_vpc_id
+  vpc_id      = aws_vpc.conan_vpc.id
 
-  depends_on = [module.conan_vpc_module.conan_vpc_id]
+  depends_on = [aws_vpc.conan_vpc]
 
   # SSH access from anywhere
   ingress {
@@ -76,30 +70,29 @@ resource "aws_security_group" "allow_web_ssh_traffic" {
   }
 }
 
-# # Create an internet gateway to give our subnet access to the outside world
-# resource "aws_internet_gateway" "conan_internet_gateway" {
-#   vpc_id = aws_vpc.conan_vpc.id
+# Create an internet gateway to give our subnet access to the outside world
+resource "aws_internet_gateway" "conan_internet_gateway" {
+  vpc_id = aws_vpc.conan_vpc.id
 
-#   tags = {
-#     Name = "conan_internet_gateway"
-#   }
-# }
+  tags = {
+    Name = "conan_internet_gateway"
+  }
+}
 
-# # Grant the VPC internet access on its main route table
-# resource "aws_route_table" "conan_route_table_default" {
-#   vpc_id = aws_vpc.conan_vpc.id
+# Grant the VPC internet access on its main route table
+resource "aws_route_table" "conan_route_table_default" {
+  vpc_id = aws_vpc.conan_vpc.id
 
-#   route {
-#     cidr_block = "0.0.0.0/0"
-#     gateway_id = aws_internet_gateway.conan_internet_gateway.id
-#   }
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.conan_internet_gateway.id
+  }
 
-#   tags = {
-#     Name = "conan_route_table_default"
-#   }
-# }
+  tags = {
+    Name = "conan_route_table_default"
+  }
+}
 
-/*
 # Create a public subnet to launch our instances into 
 resource "aws_subnet" "conan_default_public_subnet" {
   vpc_id     = aws_vpc.conan_vpc.id
@@ -111,13 +104,12 @@ resource "aws_subnet" "conan_default_public_subnet" {
     Name = "conan_default_public_subnet"
   }
 }
-*/
 
-# # Explicitly associate the main route table with the subnet
-# resource "aws_route_table_association" "conan_route_table_association_a" {
-#   subnet_id      = aws_subnet.conan_default_public_subnet.id
-#   route_table_id = aws_route_table.conan_route_table_default.id
-# }
+# Explicitly associate the main route table with the subnet
+resource "aws_route_table_association" "conan_route_table_association_a" {
+  subnet_id      = aws_subnet.conan_default_public_subnet.id
+  route_table_id = aws_route_table.conan_route_table_default.id
+}
 
 # Create a private ssh key for the EC2 instance
 resource "tls_private_key" "conan_private_key" {
@@ -151,12 +143,12 @@ resource "null_resource" "change_file_permission" {
 }
 
 
-# Launch an EC2 instance and assign to public subnet - this will indirectly attach this instance to the correct vpc because the vpc is already associated with the security group.
+# Launch an EC2 instance
 resource "aws_instance" "conan_the_deployer" {
   ami           = "ami-0c02fb55956c7d316" 
   # ami           = "${data.aws_ami.ubuntu.id}"
   instance_type = "t2.micro"
-  subnet_id     = module.conan_vpc_module.conan_public_subnet_id
+  subnet_id     = aws_subnet.conan_default_public_subnet.id
   associate_public_ip_address = true
 
   key_name      = "${aws_key_pair.conan_generated_key_pair.key_name}"
