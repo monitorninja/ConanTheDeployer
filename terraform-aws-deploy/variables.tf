@@ -19,19 +19,25 @@ variable "ec2_public_ip" {
   default = "0.0.0.0"
 }
 
-/*
-variable "public_key" {
-  # This variable declared here, but set in the terraform.tfvars file in this same directory
-  description = "Cannot use file() function in variables.tf file. Set the value of this variable later via a .tfvars file, environment variables, or the '-var' command line option when running Terraform"
+# Declare the ansible ec2 user for ansible connection to the EC2 instance.  Variable set in 'terraform.tfvars' file in this same directory
+variable "ansible_ec2_user" {
+  description = "value of the ansible_ec2_user variable"
   type = string
+  default = "ec2-user"
 }
-*/
 
-variable "conan_private_key" {
+# variable "conan_private_key" {
+#   # This variable declared here, but set in the terraform.tfvars file in this same directory
+#   description = "Cannot use file() function in variables.tf file. Set the value of this variable later via a .tfvars file, environment variables, or the '-var' command line option when running Terraform"
+#   type = string
+#   default = "~/.ssh/conankey.private"
+# }
+
+variable "conan_private_key_filename" {
   # This variable declared here, but set in the terraform.tfvars file in this same directory
   description = "Cannot use file() function in variables.tf file. Set the value of this variable later via a .tfvars file, environment variables, or the '-var' command line option when running Terraform"
   type = string
-  default = "~/.ssh/conankey.private"
+  default = "terraform-aws-deploy/.ssh/conan_private_key_terraform_output.pem"
 }
 
 # Declare the SSH command variable to the user

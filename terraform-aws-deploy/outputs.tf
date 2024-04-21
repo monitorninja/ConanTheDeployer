@@ -19,11 +19,7 @@ output "public_key" {
 output "conan_private_key_filename" {
   value = local_file.conan_private_key_file.filename
 }
-output "ssh_command" {
-  value = "ssh -i ${local_file.conan_private_key_file.filename} ec2-user@${aws_instance.conan_the_deployer.public_ip}"
-}
 
-# output "conan_vpc_id" {
-#   description = "The ID of the conan VPC"
-#   value = aws_vpc.conan_vpc.id
-# }
+output "ssh_command" {
+  value = "ssh -i ${local_file.conan_private_key_file.filename} ${var.ansible_ec2_user}@${aws_instance.conan_the_deployer.public_ip}"
+}

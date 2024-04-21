@@ -19,12 +19,16 @@ https://cloudkatha.com/how-to-create-key-pair-in-aws-using-terraform-in-right-wa
 
 
 # Ansible
+Ansible inventory template file is defined and configured in the terraform-aws-deploy/data.tf file where the ec2 public IP address
+is passed as a variable to the template file.  Then, in terraform-aws-deploy/main.tf, we 'render' the inventory.ini file from that template. The "instance_public_ip" variable in the inventory.tpl file is defined in the terraform-aws-deploy/data.tf file.
+
 pip install ansible-dev-tools
 pip install ansible
 pip install ansible-creator
 
 ansible-creator init --project=ansible-project --scm-org=devops --scm-project=ConanTheDeployer --init-path /Users/cameo/development/vsCode_workspaces/ConanTheDeployer/terraform-aws-deploy/ansible/conan_project
 
+ansible all -i terraform-aws-deploy/ansible/conan_project/inventory/inventory.ini -m ansible.builtin.ping
 
 # minikube/kubernetes
 minikube start

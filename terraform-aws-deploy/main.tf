@@ -76,49 +76,6 @@ resource "aws_security_group" "allow_web_ssh_traffic" {
   }
 }
 
-# # Create an internet gateway to give our subnet access to the outside world
-# resource "aws_internet_gateway" "conan_internet_gateway" {
-#   vpc_id = aws_vpc.conan_vpc.id
-
-#   tags = {
-#     Name = "conan_internet_gateway"
-#   }
-# }
-
-# # Grant the VPC internet access on its main route table
-# resource "aws_route_table" "conan_route_table_default" {
-#   vpc_id = aws_vpc.conan_vpc.id
-
-#   route {
-#     cidr_block = "0.0.0.0/0"
-#     gateway_id = aws_internet_gateway.conan_internet_gateway.id
-#   }
-
-#   tags = {
-#     Name = "conan_route_table_default"
-#   }
-# }
-
-/*
-# Create a public subnet to launch our instances into 
-resource "aws_subnet" "conan_default_public_subnet" {
-  vpc_id     = aws_vpc.conan_vpc.id
-  cidr_block = "10.0.1.0/24"
-  availability_zone = "us-east-1a"
-  map_public_ip_on_launch = true
-
-  tags = {
-    Name = "conan_default_public_subnet"
-  }
-}
-*/
-
-# # Explicitly associate the main route table with the subnet
-# resource "aws_route_table_association" "conan_route_table_association_a" {
-#   subnet_id      = aws_subnet.conan_default_public_subnet.id
-#   route_table_id = aws_route_table.conan_route_table_default.id
-# }
-
 # Create a private ssh key for the EC2 instance
 resource "tls_private_key" "conan_private_key" {
   algorithm = "RSA"
@@ -184,5 +141,12 @@ resource "aws_instance" "conan_the_deployer" {
 resource "local_file" "inventory" {
   content  = data.template_file.inventory.rendered
   filename = "ansible/conan_project/inventory/inventory.ini"
+  depends_on = [aws_instance.conan_the_deployer]
+}
+
+# Populate the ansible/conan_project/inventory/group_vars/all.yml with private ssh key
+resource "local_file" "group_vars_all" {
+  content  = data.template_file.group_vars_all.rendered
+  filename = "ansible/conan_project/inventory/group_vars/all.yml"
   depends_on = [aws_instance.conan_the_deployer]
 }
